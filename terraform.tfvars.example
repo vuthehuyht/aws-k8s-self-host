@@ -1,0 +1,7 @@
+aws_region = "us-east-1"
+instance_count = 7
+instance_type = "t3a.small"
+# Replace with a region-specific AMI for your region and desired distro
+ami = "ami-0c94855ba95c71c99"
+# key_name = "my-existing-keypair"
+private_subnet_cidr = "10.0.2.0/24"

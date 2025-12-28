@@ -1,0 +1,67 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+max_line_length = 120
+
+# Markdown and text files: keep trailing spaces (useful for Markdown line breaks)
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = off
+
+[README]
+trim_trailing_whitespace = false
+
+# Go files: use tabs (gofmt)
+[*.go]
+indent_style = tab
+indent_size = 4
+trim_trailing_whitespace = false
+
+# Makefiles require tabs
+[Makefile]
+indent_style = tab
+trim_trailing_whitespace = false
+
+# Shell scripts
+[*.sh]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+
+# Terraform / HCL
+[*.tf]
+indent_style = space
+indent_size = 2
+
+[*.tfvars]
+indent_style = space
+indent_size = 2
+
+# YAML / Kubernetes manifests
+[*.yml]
+indent_style = space
+indent_size = 2
+
+[*.yaml]
+indent_style = space
+indent_size = 2
+
+# Dockerfiles
+[Dockerfile]
+indent_style = space
+indent_size = 2
+
+# JSON / JS / TS / CSS / HTML
+[*.json]
+indent_style = space
+indent_size = 2
+
+[*.{js,ts,css,html}]
+indent_style = space
+indent_size = 2

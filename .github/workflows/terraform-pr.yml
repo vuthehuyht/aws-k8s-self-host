@@ -56,8 +56,19 @@ jobs:
       - name: Terraform validate
         run: terraform validate
 
+      - name: Configure AWS CLI profile 'github' from secrets
+        if: always()
+        run: |
+          mkdir -p ~/.aws
+          printf '[github]\naws_access_key_id = %s\naws_secret_access_key = %s\nregion = %s\n' "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" "$AWS_REGION" > ~/.aws/credentials
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ap-southeast-1
+
       - name: Terraform plan
         env:
+          AWS_PROFILE: github
           AWS_REGION: ap-southeast-1
         run: |
           terraform plan -no-color -out=tfplan

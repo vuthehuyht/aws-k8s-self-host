@@ -7,6 +7,8 @@ jobs:
   terraform:
     name: Terraform (PR)
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -17,8 +19,18 @@ jobs:
         with:
           terraform_version: 1.10.5
 
-      - name: Terraform fmt
-        run: terraform fmt -check -diff
+      - name: Terraform fmt (auto-fix)
+        run: |
+          terraform fmt -recursive
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "chore(ci): apply terraform fmt"
+            git push
+          else
+            echo "No formatting changes"
+          fi
 
       - name: Terraform init
         run: terraform init -input=false
@@ -31,9 +43,3 @@ jobs:
           AWS_REGION: ap-southeast-1
         run: |
           terraform plan -no-color -out=tfplan
-
-      - name: Upload plan
-        uses: actions/upload-artifact@v4
-        with:
-          name: tfplan
-          path: tfplan

@@ -168,6 +168,9 @@ resource "local_file" "bastion_private_key" {
   file_permission = "0600"
 }
 
+# If var.ami is empty, look up a recent Ubuntu 24 LTS AMI for the region (Canonical)
+
+
 # Optional: run Ansible locally to configure the cluster
 resource "null_resource" "run_ansible" {
   count = var.run_ansible ? 1 : 0

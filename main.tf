@@ -182,19 +182,19 @@ resource "aws_security_group" "dns_sg" {
 
   # allow DNS queries from worker nodes (they use aws_security_group.ssh_http)
   ingress {
-    description              = "Allow DNS TCP"
-    from_port                = 53
-    to_port                  = 53
-    protocol                 = "tcp"
-    security_groups          = [aws_security_group.ssh_http.id]
+    description     = "Allow DNS TCP"
+    from_port       = 53
+    to_port         = 53
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ssh_http.id]
   }
 
   ingress {
-    description              = "Allow DNS UDP"
-    from_port                = 53
-    to_port                  = 53
-    protocol                 = "udp"
-    security_groups          = [aws_security_group.ssh_http.id]
+    description     = "Allow DNS UDP"
+    from_port       = 53
+    to_port         = 53
+    protocol        = "udp"
+    security_groups = [aws_security_group.ssh_http.id]
   }
 
   egress {

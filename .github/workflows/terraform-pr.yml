@@ -61,7 +61,7 @@ jobs:
         run: terraform validate
 
       - name: Configure AWS credentials via OIDC (assume role)
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502  # v4.0.2
         with:
           role-to-assume: arn:aws:iam::654654329682:role/github-action-policy
           aws-region: ap-southeast-1

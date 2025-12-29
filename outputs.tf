@@ -18,3 +18,8 @@ output "bastion_public_ip" {
   value       = aws_eip.bastion_eip.public_ip
 }
 
+output "dns_private_ip" {
+  description = "Private IP of the internal DNS server"
+  value       = aws_instance.dns.private_ip
+}
+

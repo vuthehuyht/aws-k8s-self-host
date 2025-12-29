@@ -1,4 +1,14 @@
-.terraform
+# Local Terraform state
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+
+# Local secrets and keys
+bastion_key.pem
+
+# OS files
+*.log
+*.tmp.terraform
 *.tfstate
 *.tfstate.backup
 .terraform.lock.hcl

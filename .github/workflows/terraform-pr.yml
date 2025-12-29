@@ -1,0 +1,39 @@
+name: "Terraform PR checks"
+
+on:
+  pull_request:
+
+jobs:
+  terraform:
+    name: Terraform (PR)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.10.5
+
+      - name: Terraform fmt
+        run: terraform fmt -check -diff
+
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        env:
+          AWS_REGION: ap-southeast-1
+        run: |
+          terraform plan -no-color -out=tfplan
+
+      - name: Upload plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: tfplan

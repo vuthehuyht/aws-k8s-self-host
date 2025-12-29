@@ -17,9 +17,9 @@ variable "instance_type" {
 }
 
 variable "ami" {
-  description = "AMI ID to use for instances (Linux)"
+  description = "AMI ID to use for instances (Linux). If empty, a recent Ubuntu 24 LTS AMI for the region will be used."
   type        = string
-  default     = "ami-0c94855ba95c71c99" # Amazon Linux 2 in us-east-1 (example). Override in tfvars.
+  default     = ""
 }
 
 variable "key_name" {
@@ -67,5 +67,5 @@ variable "ssh_private_key_path" {
 variable "bastion_ssh_user" {
   description = "SSH user for the bastion host (used for proxy/jump)"
   type        = string
-  default     = "ec2-user"
+  default     = "ubuntu"
 }

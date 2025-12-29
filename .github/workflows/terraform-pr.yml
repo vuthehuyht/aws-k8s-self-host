@@ -2,6 +2,9 @@ name: "Terraform PR checks"
 
 on:
   pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
   terraform:
@@ -9,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
 
     steps:
       - name: Checkout

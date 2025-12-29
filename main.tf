@@ -7,14 +7,14 @@ resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.this.id
   cidr_block              = var.public_subnet_cidr
   map_public_ip_on_launch = true
-  tags                   = merge(var.tags, { Name = "${var.tags.Project}-public-subnet" })
+  tags                    = merge(var.tags, { Name = "${var.tags.Project}-public-subnet" })
 }
 
 resource "aws_subnet" "private" {
   vpc_id                  = aws_vpc.this.id
   cidr_block              = var.private_subnet_cidr
   map_public_ip_on_launch = false
-  tags = merge(var.tags, { Name = "${var.tags.Project}-private-subnet" })
+  tags                    = merge(var.tags, { Name = "${var.tags.Project}-private-subnet" })
 }
 
 resource "aws_internet_gateway" "gw" {
@@ -62,15 +62,15 @@ resource "aws_security_group_rule" "allow_ssh_from_bastion" {
 }
 
 resource "aws_instance" "node" {
-  count         = var.instance_count
-  ami           = var.ami
-  instance_type = var.instance_type
-  subnet_id     = aws_subnet.private.id
+  count                  = var.instance_count
+  ami                    = var.ami
+  instance_type          = var.instance_type
+  subnet_id              = aws_subnet.private.id
   vpc_security_group_ids = [aws_security_group.ssh_http.id]
 
   root_block_device {
-    volume_size = 100
-    volume_type = "gp3"
+    volume_size           = 100
+    volume_type           = "gp3"
     delete_on_termination = true
   }
 
@@ -81,14 +81,14 @@ resource "aws_instance" "node" {
 }
 
 resource "aws_eip" "nat_eip" {
-  domain = "vpc"
+  domain     = "vpc"
   depends_on = [aws_internet_gateway.gw]
 }
 
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat_eip.id
   subnet_id     = aws_subnet.public.id
-  tags = merge(var.tags, { Name = "${var.tags.Project}-nat" })
+  tags          = merge(var.tags, { Name = "${var.tags.Project}-nat" })
 }
 
 resource "aws_route_table" "private" {
@@ -107,16 +107,16 @@ resource "aws_route_table_association" "private" {
 
 # Bastion host in public subnet
 resource "aws_instance" "bastion" {
-  ami           = var.ami
-  instance_type = "t3.micro"
-  subnet_id     = aws_subnet.public.id
+  ami                    = var.ami
+  instance_type          = "t3.micro"
+  subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.bastion_sg.id]
 
   key_name = aws_key_pair.bastion_key.key_name
 
   root_block_device {
-    volume_size = 30
-    volume_type = "gp3"
+    volume_size           = 30
+    volume_type           = "gp3"
     delete_on_termination = true
   }
 
@@ -163,8 +163,8 @@ resource "aws_key_pair" "bastion_key" {
 }
 
 resource "local_file" "bastion_private_key" {
-  content  = tls_private_key.bastion.private_key_pem
-  filename = "${path.module}/bastion_key.pem"
+  content         = tls_private_key.bastion.private_key_pem
+  filename        = "${path.module}/bastion_key.pem"
   file_permission = "0600"
 }
 
@@ -183,7 +183,7 @@ resource "null_resource" "run_ansible" {
   provisioner "local-exec" {
     command = "bash ./scripts/run_ansible.sh ansible/site.yml"
     environment = {
-      TF_SSH_KEY = var.ssh_private_key_path
+      TF_SSH_KEY  = var.ssh_private_key_path
       TF_SSH_USER = var.bastion_ssh_user
     }
   }

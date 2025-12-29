@@ -22,25 +22,32 @@ jobs:
         with:
           terraform_version: 1.10.5
 
-      - name: Terraform fmt (auto-fix when possible)
+      - name: Terraform fmt (auto-fix and push to current branch)
         env:
-          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name || '' }}
-          REPO: ${{ github.repository }}
+          GITHUB_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          GITHUB_REF: ${{ github.ref }}
         run: |
-          if [ "${PR_HEAD_REPO}" = "${REPO}" ]; then
-            terraform fmt -recursive
-            if [ -n "$(git status --porcelain)" ]; then
-              git config user.name "github-actions[bot]"
-              git config user.email "github-actions[bot]@users.noreply.github.com"
-              git add -A
-              git commit -m "chore(ci): apply terraform fmt"
-              git push
-            else
-              echo "No formatting changes"
-            fi
+          # determine branch name: use head ref for PRs, otherwise branch from GITHUB_REF
+          if [ -n "$GITHUB_HEAD_REF" ]; then
+            BRANCH="$GITHUB_HEAD_REF"
           else
-            echo "PR comes from a fork — running strict check instead"
-            terraform fmt -check -diff
+            BRANCH="${GITHUB_REF#refs/heads/}"
+          fi
+
+          echo "Detected branch: $BRANCH"
+
+          terraform fmt -recursive
+
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            # ensure we're on the branch and not in detached HEAD
+            git checkout -B "$BRANCH"
+            git add -A
+            git commit -m "chore(ci): apply terraform fmt"
+            git push origin "$BRANCH"
+          else
+            echo "No formatting changes"
           fi
 
       - name: Terraform init

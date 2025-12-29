@@ -68,6 +68,20 @@ resource "aws_instance" "node" {
   subnet_id              = aws_subnet.private.id
   vpc_security_group_ids = [aws_security_group.ssh_http.id]
 
+  # Ensure DNS instance exists first and configure resolv to use internal DNS
+  depends_on = [aws_instance.dns]
+
+  user_data = <<-EOF
+                #!/bin/bash
+                set -e
+                # write resolver to use internal DNS server and Cloudflare as fallback
+                cat > /etc/resolv.conf <<RES
+                nameserver ${aws_instance.dns.private_ip}
+                nameserver 1.1.1.1
+                options rotate
+                RES
+                EOF
+
   root_block_device {
     volume_size           = 100
     volume_type           = "gp3"
@@ -78,6 +92,16 @@ resource "aws_instance" "node" {
   key_name = null
 
   tags = merge(var.tags, { Name = "${var.tags.Project}-node-${count.index + 1}" })
+}
+
+resource "aws_vpc_dhcp_options" "custom_dns" {
+  domain_name_servers = [aws_instance.dns.private_ip, "1.1.1.1"]
+  tags                = merge(var.tags, { Name = "${var.tags.Project}-dhcp-options" })
+}
+
+resource "aws_vpc_dhcp_options_association" "this" {
+  vpc_id          = aws_vpc.this.id
+  dhcp_options_id = aws_vpc_dhcp_options.custom_dns.id
 }
 
 resource "aws_eip" "nat_eip" {
@@ -149,6 +173,70 @@ resource "aws_security_group" "bastion_sg" {
 resource "aws_eip" "bastion_eip" {
   instance = aws_instance.bastion.id
   domain   = "vpc"
+}
+
+# Security group for DNS server
+resource "aws_security_group" "dns_sg" {
+  name   = "${var.tags.Project}-dns-sg"
+  vpc_id = aws_vpc.this.id
+
+  # allow DNS queries from worker nodes (they use aws_security_group.ssh_http)
+  ingress {
+    description              = "Allow DNS TCP"
+    from_port                = 53
+    to_port                  = 53
+    protocol                 = "tcp"
+    security_groups          = [aws_security_group.ssh_http.id]
+  }
+
+  ingress {
+    description              = "Allow DNS UDP"
+    from_port                = 53
+    to_port                  = 53
+    protocol                 = "udp"
+    security_groups          = [aws_security_group.ssh_http.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(var.tags, { Name = "${var.tags.Project}-dns-sg" })
+}
+
+# DNS server instance in private subnet (dnsmasq)
+resource "aws_instance" "dns" {
+  ami                    = var.ami
+  instance_type          = "t3.micro"
+  subnet_id              = aws_subnet.private.id
+  vpc_security_group_ids = [aws_security_group.dns_sg.id]
+
+  root_block_device {
+    volume_size           = 20
+    volume_type           = "gp3"
+    delete_on_termination = true
+  }
+
+  # private-only, no key pair
+  key_name = null
+
+  user_data = <<-EOF
+    #!/bin/bash
+    set -e
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y dnsmasq
+    # configure dnsmasq to listen on all interfaces and forward to public DNS
+    sed -i 's/^#listen-address=/listen-address=0.0.0.0/' /etc/dnsmasq.conf || true
+    echo "server=1.1.1.1" >> /etc/dnsmasq.conf
+    echo "no-resolv" >> /etc/dnsmasq.conf
+    systemctl enable dnsmasq
+    systemctl restart dnsmasq
+    EOF
+
+  tags = merge(var.tags, { Name = "${var.tags.Project}-dns" })
 }
 
 # Generate SSH key for bastion

@@ -13,23 +13,34 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.10.5
 
-      - name: Terraform fmt (auto-fix)
+      - name: Terraform fmt (auto-fix when possible)
+        env:
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name || '' }}
+          REPO: ${{ github.repository }}
         run: |
-          terraform fmt -recursive
-          if [ -n "$(git status --porcelain)" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add -A
-            git commit -m "chore(ci): apply terraform fmt"
-            git push
+          if [ "${PR_HEAD_REPO}" = "${REPO}" ]; then
+            terraform fmt -recursive
+            if [ -n "$(git status --porcelain)" ]; then
+              git config user.name "github-actions[bot]"
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              git add -A
+              git commit -m "chore(ci): apply terraform fmt"
+              git push
+            else
+              echo "No formatting changes"
+            fi
           else
-            echo "No formatting changes"
+            echo "PR comes from a fork — running strict check instead"
+            terraform fmt -check -diff
           fi
 
       - name: Terraform init

@@ -1,4 +1,4 @@
-aws_region = "us-east-1"
+aws_region = "ap-southeast-1"
 instance_count = 7
 instance_type = "t3a.small"
 # Replace with a region-specific AMI for your region and desired distro

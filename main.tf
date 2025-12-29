@@ -74,7 +74,8 @@ resource "aws_instance" "node" {
     delete_on_termination = true
   }
 
-  key_name = length(trimspace(var.key_name)) > 0 ? var.key_name : null
+  # worker nodes intentionally have no key pair to prevent direct SSH
+  key_name = null
 
   tags = merge(var.tags, { Name = "${var.tags.Project}-node-${count.index + 1}" })
 }
@@ -111,13 +112,13 @@ resource "aws_instance" "bastion" {
   subnet_id     = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.bastion_sg.id]
 
+  key_name = aws_key_pair.bastion_key.key_name
+
   root_block_device {
     volume_size = 30
     volume_type = "gp3"
     delete_on_termination = true
   }
-
-  key_name = length(trimspace(var.key_name)) > 0 ? var.key_name : null
 
   tags = merge(var.tags, { Name = "${var.tags.Project}-bastion" })
 }
@@ -148,6 +149,23 @@ resource "aws_security_group" "bastion_sg" {
 resource "aws_eip" "bastion_eip" {
   instance = aws_instance.bastion.id
   domain   = "vpc"
+}
+
+# Generate SSH key for bastion
+resource "tls_private_key" "bastion" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "bastion_key" {
+  key_name   = "${var.tags.Project}-bastion-key"
+  public_key = tls_private_key.bastion.public_key_openssh
+}
+
+resource "local_file" "bastion_private_key" {
+  content  = tls_private_key.bastion.private_key_pem
+  filename = "${path.module}/bastion_key.pem"
+  file_permission = "0600"
 }
 
 # Optional: run Ansible locally to configure the cluster

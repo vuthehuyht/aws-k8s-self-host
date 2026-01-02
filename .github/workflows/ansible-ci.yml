@@ -1,0 +1,48 @@
+name: Ansible CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible ansible-lint yamllint
+
+      - name: Run yamllint
+        working-directory: ansible
+        run: yamllint -c ../.yamllint.yml .
+
+      - name: Run ansible-lint
+        working-directory: ansible
+        run: ansible-lint -v
+
+      - name: Ansible syntax-check (all playbooks)
+        working-directory: ansible
+        run: |
+          set -e
+          echo "Finding playbooks under ansible/ (cwd=$(pwd))"
+          files=$(git ls-files '*.yml' || true)
+          if [ -z "$files" ]; then
+            echo "No playbook files found under ansible/"
+            exit 0
+          fi
+          for f in $files; do
+            echo "-- checking $f"
+            ansible-playbook --syntax-check -i inventory/production/hosts.ini "$f"
+          done

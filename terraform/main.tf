@@ -72,15 +72,15 @@ resource "aws_instance" "node" {
   depends_on = [aws_instance.dns]
 
   user_data = <<-EOF
-                #!/bin/bash
-                set -e
-                # write resolver to use internal DNS server and Cloudflare as fallback
-                cat > /etc/resolv.conf <<RES
-                nameserver ${aws_instance.dns.private_ip}
-                nameserver 1.1.1.1
-                options rotate
-                RES
-                EOF
+    #!/bin/bash
+    set -e
+    # write resolver to use internal DNS server and Cloudflare as fallback
+    cat > /etc/resolv.conf <<RES
+    nameserver ${aws_instance.dns.private_ip}
+    nameserver 1.1.1.1
+    options rotate
+    RES
+    EOF
 
   root_block_device {
     volume_size           = 100

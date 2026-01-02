@@ -1,0 +1,6 @@
+---
+galaxy_info:
+  author: HuyVT
+  description: Common role to update and patch systems
+  license: MIT
+  min_ansible_version: 2.9

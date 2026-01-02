@@ -1,0 +1,14 @@
+[Unit]
+Description=Technitium DNS
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory={{ technitium_install_dir }}
+ExecStart={{ technitium_install_dir }}/{{ technitium_binary }} --console
+Restart=on-failure
+RestartSec=5s
+User=root
+
+[Install]
+WantedBy=multi-user.target

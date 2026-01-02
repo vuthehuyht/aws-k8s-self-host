@@ -1,0 +1,7 @@
+---
+technitium_version: "3.6.1"
+technitium_download_url: "https://download.technitium.com/technitium-dns/technitium-dns-{{ technitium_version }}-linux-x64.tar.gz"
+technitium_install_dir: "/opt/technitium-dns"
+technitium_binary: "Technitium.Dns.Service"
+# Set to empty string to skip runtime install
+technitium_dotnet_runtime: "dotnet-runtime-7.0"

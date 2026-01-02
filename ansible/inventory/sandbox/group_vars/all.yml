@@ -1,0 +1,5 @@
+---
+bastion_user: ubuntu
+timezone: Asia/Ho_Chi_Minh
+os: ubuntu
+os_version: 24.04

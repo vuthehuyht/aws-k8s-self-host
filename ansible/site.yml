@@ -1,0 +1,7 @@
+---
+- name: Example play to ping all workers
+  hosts: workers
+  become: true
+  tasks:
+    - name: Ping
+      ansible.builtin.ping: {}

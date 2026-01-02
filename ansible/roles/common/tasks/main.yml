@@ -1,0 +1,138 @@
+---
+- name: Check distribution
+  loop:
+    - ansible_distribution
+    - ansible_distribution_version
+  failed_when:
+    - ansible_distribution != '{{ os }} or ansible_distribution_version != '{{ os_version }}'
+
+- name: Set timezone to {{ timezone }}
+  command: timedatectl set-timezone {{ timezone }}
+  become: true
+  changed_when: false
+  when: timezone is defined
+
+- name: Install chrony service
+  apt:
+    name: chrony
+    state: present
+    update_cache: yes
+  become: true
+  register: chrony_result
+  retries: 3
+  delay: 10
+  until: chrony_result is succeeded
+
+- name: Copy chrony configuration
+  template:
+    src: chrony.conf.j2
+    dest: /etc/chrony/chrony.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  notify: Restart chrony
+  when: chrony_result is changed
+
+- name: Enable and start chrony service
+  service:
+    name: chrony
+    state: started
+    enabled: yes
+  become: true
+
+- name: Check status of chrony service
+  command: systemctl status chrony
+  register: chrony_status
+  changed_when: false
+  become: true
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+  become: true
+
+- name: Upgrade all packages to latest
+  apt:
+    upgrade: dist
+  become: true
+  register: upgrade_result
+  retries: 3
+  delay: 10
+  until: upgrade_result is succeeded
+
+# --- SSH key generation on bastion and distribution ---
+- name: Ensure .ssh directory exists on bastion
+  file:
+    path: "/home/{{ bastion_user }}/.ssh"
+    state: directory
+    owner: "{{ bastion_user }}"
+    group: "{{ bastion_user }}"
+    mode: '0700'
+  delegate_to: "{{ groups['bastion'][0] }}"
+  become: true
+  run_once: true
+
+- name: Generate SSH keypair on bastion (run once)
+  community.crypto.openssh_keypair:
+    path: "/home/{{ bastion_user }}/.ssh/id_rsa_ansible"
+    type: rsa
+    size: 4096
+    mode: '0600'
+  delegate_to: "{{ groups['bastion'][0] }}"
+  become: true
+  run_once: true
+
+- name: Slurp bastion public key
+  slurp:
+    src: "/home/{{ bastion_user }}/.ssh/id_rsa_ansible.pub"
+  register: bastion_pub_slurped
+  delegate_to: "{{ groups['bastion'][0] }}"
+  run_once: true
+
+- name: Set bastion public key fact
+  set_fact:
+    bastion_pub_key: "{{ bastion_pub_slurped.content | b64decode }}"
+  run_once: true
+
+- name: Ensure .ssh directory exists for target user
+  file:
+    path: "/home/{{ ansible_user | default('ubuntu') }}/.ssh"
+    state: directory
+    owner: "{{ ansible_user | default('ubuntu') }}"
+    group: "{{ ansible_user | default('ubuntu') }}"
+    mode: '0700'
+  become: true
+
+- name: Add bastion public key to target user's authorized_keys
+  authorized_key:
+    user: "{{ ansible_user | default('ubuntu') }}"
+    key: "{{ bastion_pub_key }}"
+    state: present
+  become: true
+  when: groups['bastion'] is defined and inventory_hostname not in groups['bastion']
+
+- name: Ensure SSH pubkey authentication is enabled
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PubkeyAuthentication\s+'
+    line: 'PubkeyAuthentication yes'
+    state: present
+    backrefs: yes
+  become: true
+
+- name: Disable password authentication (after keys installed)
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication\s+'
+    line: 'PasswordAuthentication no'
+    state: present
+    backrefs: yes
+  become: true
+
+- name: Restart sshd to apply SSH changes
+  service:
+    name: ssh
+    state: restarted
+  become: true
+  when: ansible_service_mgr is defined

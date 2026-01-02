@@ -1,0 +1,82 @@
+---
+# Technitium DNS Server installation tasks
+
+- name: Stop and disable dnsmasq if installed
+  service:
+    name: dnsmasq
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+
+- name: Install prerequisites
+  apt:
+    name:
+      - curl
+      - unzip
+      - tar
+    state: present
+    update_cache: yes
+  become: true
+
+- name: Install .NET runtime (if requested)
+  apt:
+    name: "{{ technitium_dotnet_runtime }}"
+    state: present
+    update_cache: yes
+  become: true
+  when: technitium_dotnet_runtime != ''
+
+- name: Create install directory
+  file:
+    path: "{{ technitium_install_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+
+- name: Download Technitium DNS archive
+  get_url:
+    url: "{{ technitium_download_url }}"
+    dest: "/tmp/technitium-dns-{{ technitium_version }}.tar.gz"
+    mode: '0644'
+    force: no
+  become: true
+
+- name: Extract Technitium DNS
+  unarchive:
+    src: "/tmp/technitium-dns-{{ technitium_version }}.tar.gz"
+    dest: "{{ technitium_install_dir }}"
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+  become: true
+
+- name: Ensure technitium binary is executable
+  file:
+    path: "{{ technitium_install_dir }}/{{ technitium_binary }}"
+    mode: '0755'
+  become: true
+
+- name: Install systemd unit for Technitium DNS
+  template:
+    src: technitium-dns.service.j2
+    dest: /etc/systemd/system/technitium-dns.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload systemd
+  become: true
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+  become: true
+  listen: Reload systemd
+
+- name: Enable and start Technitium DNS service
+  service:
+    name: technitium-dns
+    state: started
+    enabled: yes
+  become: true
+

@@ -72,15 +72,15 @@ resource "aws_instance" "node" {
   depends_on = [aws_instance.dns]
 
   user_data = <<-EOF
-                #!/bin/bash
-                set -e
-                # write resolver to use internal DNS server and Cloudflare as fallback
-                cat > /etc/resolv.conf <<RES
-                nameserver ${aws_instance.dns.private_ip}
-                nameserver 1.1.1.1
-                options rotate
-                RES
-                EOF
+    #!/bin/bash
+    set -e
+    # write resolver to use internal DNS server and Cloudflare as fallback
+    cat > /etc/resolv.conf <<RES
+    nameserver ${aws_instance.dns.private_ip}
+    nameserver 1.1.1.1
+    options rotate
+    RES
+    EOF
 
   root_block_device {
     volume_size           = 100
@@ -182,19 +182,19 @@ resource "aws_security_group" "dns_sg" {
 
   # allow DNS queries from worker nodes (they use aws_security_group.ssh_http)
   ingress {
-    description              = "Allow DNS TCP"
-    from_port                = 53
-    to_port                  = 53
-    protocol                 = "tcp"
-    security_groups          = [aws_security_group.ssh_http.id]
+    description     = "Allow DNS TCP"
+    from_port       = 53
+    to_port         = 53
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ssh_http.id]
   }
 
   ingress {
-    description              = "Allow DNS UDP"
-    from_port                = 53
-    to_port                  = 53
-    protocol                 = "udp"
-    security_groups          = [aws_security_group.ssh_http.id]
+    description     = "Allow DNS UDP"
+    from_port       = 53
+    to_port         = 53
+    protocol        = "udp"
+    security_groups = [aws_security_group.ssh_http.id]
   }
 
   egress {

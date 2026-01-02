@@ -1,7 +1,6 @@
+---
 - name: Example play to ping all workers
   hosts: workers
-  tasks:
-    - name: Ping
   become: true
   tasks:
     - name: Ping
